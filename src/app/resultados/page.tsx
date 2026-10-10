@@ -18,11 +18,20 @@ export default async function ResultadosPage() {
     .select("*")
     .order("nombre_pareja", { ascending: true });
 
+  const { data: config } = await supabase
+    .from("configuracion")
+    .select("mostrar_resultados")
+    .eq("id", 1)
+    .single();
+
+  const mostrarResultadosInicial = config?.mostrar_resultados ?? false;
+
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-screen bg-gray-950 text-white font-sans">
       <ResultadosDashboard
         evaluacionesIniciales={evaluaciones || []}
         parejasData={parejas || []}
+        mostrarResultadosInicial={mostrarResultadosInicial}
       />
     </div>
   );

@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Pareja } from "@/lib/types";
-import { Trophy, Coffee, BarChart3, Users } from "lucide-react";
+import { Trophy, Coffee, BarChart3, Users, LockKeyhole } from "lucide-react";
 
 interface EvaluacionConPareja {
   id: string;
@@ -32,21 +32,28 @@ interface ParejaStats {
 interface ResultadosDashboardProps {
   evaluacionesIniciales: EvaluacionConPareja[];
   parejasData: Pareja[];
+  mostrarResultadosInicial: boolean;
 }
 
-export function ResultadosDashboard({ evaluacionesIniciales, parejasData }: ResultadosDashboardProps) {
+export function ResultadosDashboard({ 
+  evaluacionesIniciales, 
+  parejasData, 
+  mostrarResultadosInicial 
+}: ResultadosDashboardProps) {
   const [evaluaciones, setEvaluaciones] = useState(evaluacionesIniciales);
+  const [mostrarResultados, setMostrarResultados] = useState(mostrarResultadosInicial);
 
-  // Subscribe to realtime changes
+  // Subscribe to realtime changes for both evaluations and config
   useEffect(() => {
     const supabase = createClient();
+    
     const channel = supabase
-      .channel("evaluaciones-realtime")
+      .channel("public-realtime")
+      // Listen to new evaluations
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "evaluaciones" },
         async (payload) => {
-          // Fetch the full evaluation with pareja name
           const { data } = await supabase
             .from("evaluaciones")
             .select("*, parejas(nombre_pareja)")
@@ -58,6 +65,16 @@ export function ResultadosDashboard({ evaluacionesIniciales, parejasData }: Resu
           }
         }
       )
+      // Listen to config changes (lock/unlock results)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "configuracion" },
+        (payload) => {
+          if (payload.new.id === 1) {
+            setMostrarResultados(payload.new.mostrar_resultados);
+          }
+        }
+      )
       .subscribe();
 
     return () => {
@@ -65,7 +82,6 @@ export function ResultadosDashboard({ evaluacionesIniciales, parejasData }: Resu
     };
   }, []);
 
-  // Calculate stats per pareja
   const stats: ParejaStats[] = useMemo(() => {
     return parejasData.map((pareja) => {
       const evals = evaluaciones.filter((e) => e.pareja_id === pareja.id);
@@ -104,63 +120,75 @@ export function ResultadosDashboard({ evaluacionesIniciales, parejasData }: Resu
   const ganador = stats.find((s) => s.totalEvaluaciones > 0);
   const totalEvals = evaluaciones.length;
 
-  return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="text-center py-6">
-        <div className="flex items-center justify-center gap-3 mb-2">
-          <Coffee className="h-10 w-10 text-amber-400" />
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
-            Resultados en Vivo
-          </h1>
-          <Coffee className="h-10 w-10 text-amber-400" />
+  if (!mostrarResultados) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center space-y-6">
+        <LockKeyhole className="h-24 w-24 text-amber-500/50 animate-pulse mb-4" />
+        <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-amber-200 to-amber-500 bg-clip-text text-transparent">
+          Resultados Ocultos
+        </h1>
+        <p className="text-gray-400 text-lg max-w-lg">
+          La competencia está en curso. Los resultados se revelarán aquí mismo cuando el organizador los desbloquee.
+        </p>
+        <div className="flex items-center gap-3 bg-gray-900/50 border border-gray-800 rounded-full px-6 py-3 mt-8">
+          <span className="inline-flex h-3 w-3 rounded-full bg-amber-500 animate-ping" />
+          <span className="text-gray-300 font-medium">Recibiendo evaluaciones en vivo...</span>
         </div>
-        <p className="text-gray-400">Competencia de Filtrado V60 — Ficha de Cata Rápida</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6 sm:space-y-8 pb-20">
+      {/* Header */}
+      <div className="text-center py-4 sm:py-6">
+        <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2">
+          <Coffee className="h-8 w-8 sm:h-10 sm:w-10 text-amber-400" />
+          <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
+            Resultados Finales
+          </h1>
+          <Coffee className="h-8 w-8 sm:h-10 sm:w-10 text-amber-400" />
+        </div>
+        <p className="text-gray-400 text-sm sm:text-base">Competencia de Filtrado V60</p>
         <div className="flex items-center justify-center gap-2 mt-3">
-          <span className="inline-flex h-3 w-3 rounded-full bg-green-500 animate-pulse" />
-          <span className="text-green-400 text-sm font-medium">En vivo</span>
-          <span className="text-gray-500 text-sm ml-4">
+          <span className="text-gray-500 text-xs sm:text-sm bg-gray-900 px-3 py-1 rounded-full border border-gray-800">
             <Users className="inline h-4 w-4 mr-1" />
-            {totalEvals} evaluaciones recibidas
+            {totalEvals} evaluaciones totales
           </span>
         </div>
       </div>
 
       {/* Winner Card */}
       {ganador && ganador.totalEvaluaciones > 0 && (
-        <div className="bg-gradient-to-br from-amber-900/50 to-yellow-900/30 border border-amber-700/50 rounded-2xl p-8 text-center">
-          <Trophy className="mx-auto h-16 w-16 text-yellow-400 mb-3" />
-          <p className="text-amber-300 text-sm font-semibold uppercase tracking-widest mb-1">Líder Actual</p>
-          <h2 className="text-4xl font-bold text-white mb-2">{ganador.nombre}</h2>
+        <div className="bg-gradient-to-br from-amber-900/50 to-yellow-900/30 border border-amber-700/50 rounded-2xl p-6 sm:p-8 text-center shadow-2xl">
+          <Trophy className="mx-auto h-12 w-12 sm:h-16 sm:w-16 text-yellow-400 mb-3" />
+          <p className="text-amber-300 text-xs sm:text-sm font-semibold uppercase tracking-widest mb-1">Ganador(es)</p>
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-2">{ganador.nombre}</h2>
           <div className="flex items-center justify-center gap-2">
-            <span className="text-5xl font-bold text-yellow-400">
+            <span className="text-4xl sm:text-5xl font-bold text-yellow-400">
               {ganador.promedioTotal.toFixed(1)}
             </span>
-            <span className="text-xl text-gray-400">/ 15 pts</span>
+            <span className="text-lg sm:text-xl text-gray-400">/ 15 pts</span>
           </div>
-          <p className="text-gray-400 text-sm mt-2">
-            Promedio de {ganador.totalEvaluaciones} evaluación(es)
-          </p>
         </div>
       )}
 
       {/* Leaderboard */}
-      <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-800 flex items-center gap-2">
+      <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden shadow-xl">
+        <div className="px-4 sm:px-6 py-4 border-b border-gray-800 flex items-center gap-2">
           <BarChart3 className="h-5 w-5 text-amber-400" />
-          <h3 className="text-lg font-bold">Tabla de Posiciones</h3>
+          <h3 className="text-base sm:text-lg font-bold">Tabla de Posiciones</h3>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full text-sm sm:text-base">
             <thead>
-              <tr className="text-gray-400 text-sm border-b border-gray-800">
-                <th className="px-6 py-3 text-left">#</th>
-                <th className="px-6 py-3 text-left">Pareja</th>
-                <th className="px-6 py-3 text-center">Aroma</th>
-                <th className="px-6 py-3 text-center">Balance</th>
-                <th className="px-6 py-3 text-center">Cuerpo</th>
-                <th className="px-6 py-3 text-center font-bold text-amber-400">Total</th>
-                <th className="px-6 py-3 text-center">Evals</th>
+              <tr className="text-gray-400 border-b border-gray-800 bg-gray-900/50">
+                <th className="px-4 sm:px-6 py-3 text-left">#</th>
+                <th className="px-4 sm:px-6 py-3 text-left">Pareja</th>
+                <th className="px-3 sm:px-6 py-3 text-center">Aroma</th>
+                <th className="px-3 sm:px-6 py-3 text-center">Balance</th>
+                <th className="px-3 sm:px-6 py-3 text-center">Cuerpo</th>
+                <th className="px-4 sm:px-6 py-3 text-center font-bold text-amber-400">Total</th>
               </tr>
             </thead>
             <tbody>
@@ -169,12 +197,12 @@ export function ResultadosDashboard({ evaluacionesIniciales, parejasData }: Resu
                   key={s.id}
                   className={`border-b border-gray-800/50 transition-colors ${
                     i === 0 && s.totalEvaluaciones > 0
-                      ? "bg-amber-900/20"
+                      ? "bg-amber-900/10"
                       : "hover:bg-gray-800/50"
                   }`}
                 >
-                  <td className="px-6 py-4">
-                    <span className={`text-lg font-bold ${
+                  <td className="px-4 sm:px-6 py-4">
+                    <span className={`text-base sm:text-lg font-bold ${
                       i === 0 && s.totalEvaluaciones > 0 ? "text-yellow-400" :
                       i === 1 && s.totalEvaluaciones > 0 ? "text-gray-300" :
                       i === 2 && s.totalEvaluaciones > 0 ? "text-amber-600" :
@@ -183,102 +211,29 @@ export function ResultadosDashboard({ evaluacionesIniciales, parejasData }: Resu
                       {s.totalEvaluaciones > 0 ? i + 1 : "—"}
                     </span>
                   </td>
-                  <td className="px-6 py-4 font-semibold">{s.nombre}</td>
-                  <td className="px-6 py-4 text-center">
+                  <td className="px-4 sm:px-6 py-4 font-semibold whitespace-nowrap">{s.nombre}</td>
+                  <td className="px-3 sm:px-6 py-4 text-center text-gray-300">
                     {s.totalEvaluaciones > 0 ? s.promedioAroma.toFixed(1) : "—"}
                   </td>
-                  <td className="px-6 py-4 text-center">
+                  <td className="px-3 sm:px-6 py-4 text-center text-gray-300">
                     {s.totalEvaluaciones > 0 ? s.promedioBalance.toFixed(1) : "—"}
                   </td>
-                  <td className="px-6 py-4 text-center">
+                  <td className="px-3 sm:px-6 py-4 text-center text-gray-300">
                     {s.totalEvaluaciones > 0 ? s.promedioCuerpo.toFixed(1) : "—"}
                   </td>
-                  <td className="px-6 py-4 text-center">
-                    <span className={`text-lg font-bold ${
+                  <td className="px-4 sm:px-6 py-4 text-center bg-gray-900/30">
+                    <span className={`text-base sm:text-lg font-bold ${
                       s.totalEvaluaciones > 0 ? "text-amber-400" : "text-gray-600"
                     }`}>
                       {s.totalEvaluaciones > 0 ? s.promedioTotal.toFixed(1) : "—"}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-center text-gray-400">
-                    {s.totalEvaluaciones}
-                  </td>
                 </tr>
               ))}
-              {stats.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
-                    No hay parejas registradas aún
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
       </div>
-
-      {/* Breakdown Bars */}
-      {stats.some((s) => s.totalEvaluaciones > 0) && (
-        <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6">
-          <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-amber-400" />
-            Desglose por Criterio
-          </h3>
-          <div className="space-y-6">
-            {stats
-              .filter((s) => s.totalEvaluaciones > 0)
-              .map((s) => (
-                <div key={s.id} className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="font-semibold">{s.nombre}</span>
-                    <span className="text-amber-400 font-bold">
-                      {s.promedioTotal.toFixed(1)} / 15
-                    </span>
-                  </div>
-                  {/* Aroma bar */}
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-gray-400 w-16">Aroma</span>
-                    <div className="flex-1 bg-gray-800 rounded-full h-3 overflow-hidden">
-                      <div
-                        className="h-full bg-amber-500 rounded-full transition-all duration-700"
-                        style={{ width: `${(s.promedioAroma / 5) * 100}%` }}
-                      />
-                    </div>
-                    <span className="text-xs text-gray-300 w-8 text-right">
-                      {s.promedioAroma.toFixed(1)}
-                    </span>
-                  </div>
-                  {/* Balance bar */}
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-gray-400 w-16">Balance</span>
-                    <div className="flex-1 bg-gray-800 rounded-full h-3 overflow-hidden">
-                      <div
-                        className="h-full bg-orange-500 rounded-full transition-all duration-700"
-                        style={{ width: `${(s.promedioBalance / 5) * 100}%` }}
-                      />
-                    </div>
-                    <span className="text-xs text-gray-300 w-8 text-right">
-                      {s.promedioBalance.toFixed(1)}
-                    </span>
-                  </div>
-                  {/* Cuerpo bar */}
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-gray-400 w-16">Cuerpo</span>
-                    <div className="flex-1 bg-gray-800 rounded-full h-3 overflow-hidden">
-                      <div
-                        className="h-full bg-yellow-500 rounded-full transition-all duration-700"
-                        style={{ width: `${(s.promedioCuerpo / 5) * 100}%` }}
-                      />
-                    </div>
-                    <span className="text-xs text-gray-300 w-8 text-right">
-                      {s.promedioCuerpo.toFixed(1)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
