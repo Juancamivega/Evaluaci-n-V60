@@ -138,9 +138,12 @@ BEGIN
 END $$;
 
 -- ============================================================
--- PRECARGA DE LAS 13 PAREJAS OFICIALES
+-- PRECARGA DE LAS 13 PAREJAS OFICIALES (Sin requerir ON CONFLICT)
 -- ============================================================
-INSERT INTO parejas (nombre_pareja) VALUES
+CREATE UNIQUE INDEX IF NOT EXISTS idx_parejas_nombre_uniq ON parejas (nombre_pareja);
+
+INSERT INTO parejas (nombre_pareja)
+SELECT p FROM (VALUES
   ('ANGEL Y SOFIA'),
   ('J. CAMILO Y TATIANA'),
   ('MAICOL Y JERSON'),
@@ -154,4 +157,8 @@ INSERT INTO parejas (nombre_pareja) VALUES
   ('LORENA Y JESSICA'),
   ('STIVEN Y KIMBERLY'),
   ('BRAYAN Y JUAN JOSÉ')
-ON CONFLICT (nombre_pareja) DO NOTHING;
+) AS nuevas(p)
+WHERE NOT EXISTS (
+  SELECT 1 FROM parejas WHERE nombre_pareja = nuevas.p
+);
+
