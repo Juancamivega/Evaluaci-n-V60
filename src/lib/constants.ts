@@ -78,8 +78,7 @@ export const CATEGORIAS: CategoriaDef[] = [
       { id: "sens_dulzor", label: "Dulzor" },
       { id: "sens_amargo", label: "Residual amargo" },
       { id: "sens_limpieza", label: "Limpieza de Taza" },
-      { id: "sens_cuerpo_inconsistente", label: "Cuerpo y textura (Aguado, inconsistente, sin cuerpo)" },
-      { id: "sens_cuerpo_sedoso", label: "Cuerpo y textura (Sedoso, redondo, agradable en boca)" },
+      { id: "sens_cuerpo", label: "Cuerpo y textura (1: Aguado / Inconsistente — 5: Sedoso / Redondo)" },
     ],
   },
 ];

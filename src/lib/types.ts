@@ -49,8 +49,9 @@ export type Database = {
           sens_dulzor: number;
           sens_amargo: number;
           sens_limpieza: number;
-          sens_cuerpo_inconsistente: number;
-          sens_cuerpo_sedoso: number;
+          sens_cuerpo: number;
+          sens_cuerpo_inconsistente?: number;
+          sens_cuerpo_sedoso?: number;
           promedio_sensorial: number;
           // Totales
           total_ponderado: number;
@@ -87,8 +88,9 @@ export type Database = {
           sens_dulzor: number;
           sens_amargo: number;
           sens_limpieza: number;
-          sens_cuerpo_inconsistente: number;
-          sens_cuerpo_sedoso: number;
+          sens_cuerpo: number;
+          sens_cuerpo_inconsistente?: number;
+          sens_cuerpo_sedoso?: number;
           promedio_sensorial: number;
           // Totales
           total_ponderado: number;
@@ -122,6 +124,7 @@ export type Database = {
           sens_dulzor?: number;
           sens_amargo?: number;
           sens_limpieza?: number;
+          sens_cuerpo?: number;
           sens_cuerpo_inconsistente?: number;
           sens_cuerpo_sedoso?: number;
           promedio_sensorial?: number;

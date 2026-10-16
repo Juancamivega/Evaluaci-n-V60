@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ParejasManager } from "@/components/ParejasManager";
 import { Evaluacion, Pareja, ParejaResumenStats } from "@/lib/types";
 import { exportarEvaluacionesAExcel } from "@/lib/exportExcel";
+import { ExcelExportModal } from "@/components/ExcelExportModal";
 import {
   Settings,
   Coffee,
@@ -30,9 +31,14 @@ export function AdminPanel({
   const [confirmacionTexto, setConfirmacionTexto] = useState("");
   const [loadingReset, setLoadingReset] = useState(false);
   const [mensajeReset, setMensajeReset] = useState("");
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   // Handler para exportar
   function handleExportarExcel() {
+    setIsExportModalOpen(true);
+  }
+
+  function handleConfirmDownload() {
     // Generar stats básicas
     const stats: ParejaResumenStats[] = parejas.map((p) => {
       const evals = evaluaciones.filter(
@@ -233,6 +239,13 @@ export function AdminPanel({
           </button>
         </form>
       </div>
+
+      {/* Modal de Protección con Contraseña para Exportar Excel */}
+      <ExcelExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        onSuccess={handleConfirmDownload}
+      />
     </div>
   );
 }

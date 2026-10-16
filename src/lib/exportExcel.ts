@@ -57,8 +57,7 @@ export function exportarEvaluacionesAExcel(
     "3.3 Dulzor": e.sens_dulzor,
     "3.4 Residual amargo": e.sens_amargo,
     "3.5 Limpieza de taza": e.sens_limpieza,
-    "3.6 Cuerpo inconsistente": e.sens_cuerpo_inconsistente,
-    "3.7 Cuerpo sedoso": e.sens_cuerpo_sedoso,
+    "3.6 Cuerpo y textura (1:Aguado - 5:Sedoso)": e.sens_cuerpo ?? e.sens_cuerpo_sedoso ?? e.sens_cuerpo_inconsistente,
     "Subtotal Preparación / Sensorial": Number(e.promedio_sensorial),
 
     // Totales

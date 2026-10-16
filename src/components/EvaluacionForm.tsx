@@ -173,8 +173,9 @@ export function EvaluacionForm({ parejasDb = [] }: EvaluacionFormProps) {
         sens_dulzor: scores["sens_dulzor"],
         sens_amargo: scores["sens_amargo"],
         sens_limpieza: scores["sens_limpieza"],
-        sens_cuerpo_inconsistente: scores["sens_cuerpo_inconsistente"],
-        sens_cuerpo_sedoso: scores["sens_cuerpo_sedoso"],
+        sens_cuerpo: scores["sens_cuerpo"],
+        sens_cuerpo_sedoso: scores["sens_cuerpo"],
+        sens_cuerpo_inconsistente: scores["sens_cuerpo"],
         promedio_sensorial: Number(calculos.promSensorial.toFixed(2)),
 
         // Totales
@@ -511,7 +512,7 @@ export function EvaluacionForm({ parejasDb = [] }: EvaluacionFormProps) {
               </h2>
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              7 criterios · Aroma, acidez, dulzor, residual y textura de taza
+              6 criterios · Aroma, acidez, dulzor, residual, limpieza y textura de taza
             </p>
           </div>
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-right">

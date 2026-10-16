@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Evaluacion, Pareja, ParejaResumenStats } from "@/lib/types";
 import { PAREJAS_PREDETERMINADAS } from "@/lib/constants";
 import { exportarEvaluacionesAExcel } from "@/lib/exportExcel";
+import { ExcelExportModal } from "@/components/ExcelExportModal";
 import {
   Trophy,
   Coffee,
@@ -34,6 +35,7 @@ export function ResultadosDashboard({
   const [filtroTexto, setFiltroTexto] = useState("");
   const [vistaActiva, setVistaActiva] = useState<"acumulado" | "individuales">("acumulado");
   const [evaluacionExpandida, setEvaluacionExpandida] = useState<string | null>(null);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   // Lista de parejas
   const parejasNombres = useMemo(() => {
@@ -136,7 +138,6 @@ export function ResultadosDashboard({
     return evaluaciones.filter(
       (e) =>
         e.pareja_nombre.toLowerCase().includes(term) ||
-        e.evaluador.toLowerCase().includes(term) ||
         e.metodo.toLowerCase().includes(term)
     );
   }, [evaluaciones, filtroTexto]);
@@ -145,6 +146,10 @@ export function ResultadosDashboard({
   const totalEvaluaciones = evaluaciones.length;
 
   function handleDescargarExcel() {
+    setIsExportModalOpen(true);
+  }
+
+  function handleConfirmDownload() {
     exportarEvaluacionesAExcel(evaluaciones, statsPorPareja);
   }
 
@@ -396,8 +401,9 @@ export function ResultadosDashboard({
                       <h4 className="text-base sm:text-lg font-extrabold text-gray-900">
                         {e.pareja_nombre}
                       </h4>
-                      <p className="text-xs text-gray-600">
-                        Evaluador: <strong className="text-gray-900">{e.evaluador}</strong>
+                      <p className="text-xs text-stone-500 flex items-center gap-1.5 mt-0.5">
+                        <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <span>Evaluación de Juez Oficial (Confidencial en pantalla)</span>
                       </p>
                     </div>
 
@@ -458,8 +464,7 @@ export function ResultadosDashboard({
                             <li>Aroma: {e.sens_aroma}/5 · Acidez: {e.sens_acidez}/5</li>
                             <li>Dulzor: {e.sens_dulzor}/5 · Amargo: {e.sens_amargo}/5</li>
                             <li>Limpieza taza: {e.sens_limpieza}/5</li>
-                            <li>Cuerpo sin cuerpo: {e.sens_cuerpo_inconsistente}/5</li>
-                            <li>Cuerpo sedoso: {e.sens_cuerpo_sedoso}/5</li>
+                            <li>Cuerpo y textura: {e.sens_cuerpo ?? e.sens_cuerpo_sedoso ?? e.sens_cuerpo_inconsistente}/5</li>
                           </ul>
                         </div>
                       </div>
@@ -480,6 +485,13 @@ export function ResultadosDashboard({
           )}
         </div>
       )}
+
+      {/* Modal de Protección con Contraseña para Exportar Excel */}
+      <ExcelExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        onSuccess={handleConfirmDownload}
+      />
     </div>
   );
 }

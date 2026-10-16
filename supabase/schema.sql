@@ -60,8 +60,9 @@ CREATE TABLE evaluaciones (
   sens_dulzor INT NOT NULL CHECK (sens_dulzor BETWEEN 1 AND 5),
   sens_amargo INT NOT NULL CHECK (sens_amargo BETWEEN 1 AND 5),
   sens_limpieza INT NOT NULL CHECK (sens_limpieza BETWEEN 1 AND 5),
-  sens_cuerpo_inconsistente INT NOT NULL CHECK (sens_cuerpo_inconsistente BETWEEN 1 AND 5),
-  sens_cuerpo_sedoso INT NOT NULL CHECK (sens_cuerpo_sedoso BETWEEN 1 AND 5),
+  sens_cuerpo INT NOT NULL CHECK (sens_cuerpo BETWEEN 1 AND 5),
+  sens_cuerpo_inconsistente INT CHECK (sens_cuerpo_inconsistente BETWEEN 1 AND 5),
+  sens_cuerpo_sedoso INT CHECK (sens_cuerpo_sedoso BETWEEN 1 AND 5),
   promedio_sensorial NUMERIC(4,2) NOT NULL,
 
   -- TOTALES PONDERADOS Y SIMPLES
