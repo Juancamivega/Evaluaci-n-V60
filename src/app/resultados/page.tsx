@@ -1,38 +1,48 @@
 import { createClient } from "@/lib/supabase/server";
 import { ResultadosDashboard } from "@/components/ResultadosDashboard";
+import { Navbar } from "@/components/Navbar";
 import { connection } from "next/server";
+import { Evaluacion, Pareja } from "@/lib/types";
 
 export const instant = false;
 
 export default async function ResultadosPage() {
   await connection();
-  const supabase = await createClient();
+  let evaluaciones: Evaluacion[] = [];
+  let parejas: Pareja[] = [];
 
-  const { data: evaluaciones } = await supabase
-    .from("evaluaciones")
-    .select("*, parejas(nombre_pareja)")
-    .order("creado_en", { ascending: false });
+  try {
+    const supabase = await createClient();
+    const [evalsRes, parejasRes] = await Promise.all([
+      supabase
+        .from("evaluaciones")
+        .select("*")
+        .order("creado_en", { ascending: false }),
+      supabase
+        .from("parejas")
+        .select("*")
+        .order("nombre_pareja", { ascending: true }),
+    ]);
 
-  const { data: parejas } = await supabase
-    .from("parejas")
-    .select("*")
-    .order("nombre_pareja", { ascending: true });
-
-  const { data: config } = await supabase
-    .from("configuracion")
-    .select("mostrar_resultados")
-    .eq("id", 1)
-    .single();
-
-  const mostrarResultadosInicial = config?.mostrar_resultados ?? false;
+    if (evalsRes.data) evaluaciones = evalsRes.data;
+    if (parejasRes.data) parejas = parejasRes.data;
+  } catch {
+    evaluaciones = [];
+    parejas = [];
+  }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white font-sans">
-      <ResultadosDashboard
-        evaluacionesIniciales={evaluaciones || []}
-        parejasData={parejas || []}
-        mostrarResultadosInicial={mostrarResultadosInicial}
-      />
+    <div className="min-h-screen bg-stone-100 flex flex-col">
+      <Navbar />
+      <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 pb-24">
+        <ResultadosDashboard
+          evaluacionesIniciales={evaluaciones}
+          parejasDb={parejas}
+        />
+      </main>
+      <footer className="text-center py-6 text-xs text-stone-500 border-t border-stone-200">
+        SENA - Centro de la Industria la Empresa y los Servicios · Técnico en Servicios de Barismo
+      </footer>
     </div>
   );
 }

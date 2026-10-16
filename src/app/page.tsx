@@ -1,63 +1,36 @@
-import Link from "next/link";
-import { Coffee, ClipboardList, BarChart3, Settings } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
+import { EvaluacionForm } from "@/components/EvaluacionForm";
+import { Navbar } from "@/components/Navbar";
+import { connection } from "next/server";
+import { Pareja } from "@/lib/types";
 
-export default function HomePage() {
+export const instant = false;
+
+export default async function HomePage() {
+  await connection();
+  let parejas: Pareja[] = [];
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("parejas")
+      .select("*")
+      .order("nombre_pareja", { ascending: true });
+    if (data) {
+      parejas = data;
+    }
+  } catch {
+    parejas = [];
+  }
+
   return (
-    <div className="min-h-screen bg-amber-50 flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full space-y-8">
-        {/* Hero */}
-        <div className="text-center space-y-4">
-          <div className="flex justify-center">
-            <div className="bg-amber-900 p-4 rounded-2xl shadow-lg">
-              <Coffee className="h-12 w-12 text-white" />
-            </div>
-          </div>
-          <h1 className="text-4xl font-bold text-gray-900">
-            Ficha de Cata Rápida
-          </h1>
-          <p className="text-lg text-gray-600 max-w-md mx-auto">
-            Sistema de evaluación para la competencia de filtrado V60 — Clase de Barismo
-          </p>
-        </div>
-
-        {/* Navigation Cards */}
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Link
-            href="/admin"
-            className="group bg-white rounded-2xl shadow-lg p-6 text-center hover:shadow-xl transition-all hover:-translate-y-1 border border-gray-100"
-          >
-            <Settings className="mx-auto h-10 w-10 text-amber-600 mb-3 group-hover:scale-110 transition-transform" />
-            <h2 className="font-bold text-gray-900 text-lg">Admin</h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Gestionar parejas y generar tokens
-            </p>
-          </Link>
-
-          <Link
-            href="/resultados"
-            className="group bg-white rounded-2xl shadow-lg p-6 text-center hover:shadow-xl transition-all hover:-translate-y-1 border border-gray-100"
-          >
-            <BarChart3 className="mx-auto h-10 w-10 text-green-600 mb-3 group-hover:scale-110 transition-transform" />
-            <h2 className="font-bold text-gray-900 text-lg">Resultados</h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Ver puntajes en tiempo real
-            </p>
-          </Link>
-
-          <div className="bg-white rounded-2xl shadow-lg p-6 text-center border border-gray-100 opacity-75">
-            <ClipboardList className="mx-auto h-10 w-10 text-blue-600 mb-3" />
-            <h2 className="font-bold text-gray-900 text-lg">Evaluar</h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Accede con tu token de evaluación
-            </p>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <p className="text-center text-xs text-gray-400">
-          Los evaluadores acceden directamente con su enlace personalizado generado desde el panel de administración.
-        </p>
-      </div>
+    <div className="min-h-screen bg-stone-100 flex flex-col">
+      <Navbar />
+      <main className="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 pb-24">
+        <EvaluacionForm parejasDb={parejas} />
+      </main>
+      <footer className="text-center py-6 text-xs text-stone-500 border-t border-stone-200">
+        SENA - Centro de la Industria la Empresa y los Servicios · Técnico en Servicios de Barismo
+      </footer>
     </div>
   );
 }

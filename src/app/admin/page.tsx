@@ -1,39 +1,48 @@
 import { createClient } from "@/lib/supabase/server";
 import { AdminPanel } from "@/components/AdminPanel";
+import { Navbar } from "@/components/Navbar";
 import { connection } from "next/server";
+import { Evaluacion, Pareja } from "@/lib/types";
 
 export const instant = false;
 
 export default async function AdminPage() {
   await connection();
-  const supabase = await createClient();
+  let parejas: Pareja[] = [];
+  let evaluaciones: Evaluacion[] = [];
 
-  const { data: parejas } = await supabase
-    .from("parejas")
-    .select("*")
-    .order("creado_en", { ascending: true });
+  try {
+    const supabase = await createClient();
+    const [parejasRes, evalsRes] = await Promise.all([
+      supabase
+        .from("parejas")
+        .select("*")
+        .order("nombre_pareja", { ascending: true }),
+      supabase
+        .from("evaluaciones")
+        .select("*")
+        .order("creado_en", { ascending: false }),
+    ]);
 
-  const { data: tokens } = await supabase
-    .from("tokens_voto")
-    .select("*")
-    .order("creado_en", { ascending: false });
-
-  // Fallback seguro en caso de que aún no hayan corrido el script SQL de configuración
-  const { data: config } = await supabase
-    .from("configuracion")
-    .select("mostrar_resultados")
-    .eq("id", 1)
-    .single();
-
-  const mostrarResultadosInicial = config?.mostrar_resultados ?? true; // Por defecto mostrar si no hay config
+    if (parejasRes.data) parejas = parejasRes.data;
+    if (evalsRes.data) evaluaciones = evalsRes.data;
+  } catch {
+    parejas = [];
+    evaluaciones = [];
+  }
 
   return (
-    <div className="min-h-screen bg-amber-50 py-4 sm:py-6 px-2 sm:px-4">
-      <AdminPanel
-        parejasIniciales={parejas || []}
-        tokensIniciales={tokens || []}
-        mostrarResultadosInicial={mostrarResultadosInicial}
-      />
+    <div className="min-h-screen bg-stone-100 flex flex-col">
+      <Navbar />
+      <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 pb-24">
+        <AdminPanel
+          parejasIniciales={parejas}
+          evaluacionesIniciales={evaluaciones}
+        />
+      </main>
+      <footer className="text-center py-6 text-xs text-stone-500 border-t border-stone-200">
+        SENA - Centro de la Industria la Empresa y los Servicios · Técnico en Servicios de Barismo
+      </footer>
     </div>
   );
 }
